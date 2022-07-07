@@ -34,7 +34,13 @@ where
 /// It should only be called once!
 pub fn init_subscriber(subscriber: impl Subscriber + Sync + Send) {
     LogTracer::init().expect("Failed to set logger");
-    set_global_default(subscriber).expect("Failed to set subscriber");
+    // set_global_default(subscriber).expect("Failed to set subscriber");
+
+    let tracer = opentelemetry_jaeger::new_pipeline().install_simple().unwrap();
+    // let tracer = stdout::new_pipeline().install_simple();
+    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    let subscriber = Registry::default().with(telemetry);
+    set_global_default(subscriber).unwrap();
 }
 
 pub fn spawn_blocking_with_tracing<F, R>(f: F) -> JoinHandle<R>
